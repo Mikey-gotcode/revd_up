@@ -55,6 +55,11 @@ dependencies {
     // *** FIX 2: ADD MATERIAL COMPONENTS (Contains Button and Toast styling) ***
     implementation("com.google.android.material:material:1.12.0")
     implementation("com.google.android.gms:play-services-auth:21.1.0")
+    implementation("androidx.compose.material:material-icons-extended:1.6.7")
+
+    implementation("androidx.navigation:navigation-compose:2.7.7")
+
+
 
 
     implementation("androidx.constraintlayout:constraintlayout:2.1.4") // Use the latest stable version
@@ -70,6 +75,12 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.compose.material3)
+    implementation(libs.androidx.ui)
+    implementation(libs.androidx.compose.foundation)
+    implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.ui.text)
+    implementation(libs.firebase.crashlytics.buildtools)
+    implementation(libs.androidx.material3)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
