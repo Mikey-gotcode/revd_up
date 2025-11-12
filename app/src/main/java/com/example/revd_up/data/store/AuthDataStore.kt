@@ -1,29 +1,22 @@
 package com.example.revd_up.data.store
 
+import android.content.ContentValues.TAG
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.preferencesDataStore
 import com.example.revd_up.data.store.PreferencesKeys.AUTH_TOKEN
+import com.example.revd_up.data.store.PreferencesKeys.USER_ROLE
 import com.example.revd_up.domain.model.AuthToken
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import android.util.Log
 
-// Global DataStore instance definition
 private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "auth_preferences")
 
-/**
- * Handles persistent storage of authentication data (e.g., JWT tokens).
- * This replaces the need for keeping tokens in memory and provides auto-login capability.
- * * @param context The Android Context, typically ApplicationContext.
- */
 class AuthDataStore(private val context: Context) {
 
-    /**
-     * Reads the authentication token from DataStore as a Flow.
-     * @return Flow of AuthToken or null if not present.
-     */
     val authTokenFlow: Flow<AuthToken?> = context.dataStore.data
         .map { preferences ->
             preferences[AUTH_TOKEN]?.let { token ->
@@ -31,22 +24,41 @@ class AuthDataStore(private val context: Context) {
             }
         }
 
-    /**
-     * Saves the authentication token to DataStore.
-     */
     suspend fun saveAuthToken(token: String) {
+        Log.d(TAG, "Saving token to DataStore: $token")
         context.dataStore.edit { preferences ->
             preferences[AUTH_TOKEN] = token
         }
+        Log.d(TAG, "Token saved successfully")
     }
 
-    /**
-     * Clears all authentication preferences (used for logout).
-     */
+    suspend fun saveUserRole(role: String) {
+        Log.d(TAG, "Saving user role: $role")
+        context.dataStore.edit { preferences ->
+            preferences[USER_ROLE] = role
+        }
+        Log.d(TAG, "User role saved successfully")
+    }
+
+    val userRoleFlow: Flow<String?> = context.dataStore.data
+        .map { preferences ->
+            preferences[USER_ROLE]
+        }
+
+    suspend fun clearUserRole() {
+        Log.d(TAG, "Clearing user role from DataStore")
+        context.dataStore.edit { preferences ->
+            preferences.remove(USER_ROLE)
+        }
+        Log.d(TAG, "User role cleared successfully")
+    }
+
     suspend fun clearAuthToken() {
+        Log.d(TAG, "Clearing auth token and user role")
         context.dataStore.edit { preferences ->
             preferences.remove(AUTH_TOKEN)
-            preferences.remove(PreferencesKeys.USER_ROLE) // Also clear role on logout
         }
+        clearUserRole() // ✅ Clears role automatically on logout
+        Log.d(TAG, "Auth token and role cleared successfully")
     }
 }
