@@ -145,7 +145,7 @@ fun AdminDashboardPreview() {
         override suspend fun clearAuthToken() {}
     }
 
-    // Use your custom REVD_UPTheme instead of default MaterialTheme
+
     REVD_UPTheme {
         AdminDashboard(
             dataStore = fakeDataStore,
