@@ -1,21 +1,21 @@
 package com.example.revd_up.presentation.views.admin
 
 import android.util.Log
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.example.revd_up.data.store.AuthDataStore
+import com.example.revd_up.ui.theme.REVD_UPTheme
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,7 +43,7 @@ fun AdminDashboard(
                             onLogout()
                         }
                     }) {
-                        Icon(Icons.Default.Logout, contentDescription = "Log Out")
+                        Icon(Icons.AutoMirrored.Filled.Logout, contentDescription = "Log Out")
                     }
                 }
             )
@@ -96,7 +96,7 @@ fun AdminDashboard(
 fun SummaryCard(title: String, value: String) {
     Card(
         modifier = Modifier
-            .weight(1f)
+            .fillMaxWidth(0.5f)
             .height(90.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -139,15 +139,16 @@ fun AdminActionCard(title: String, onClick: () -> Unit) {
 @Preview(showBackground = true, showSystemUi = true)
 @Composable
 fun AdminDashboardPreview() {
-    val fake = object : AuthDataStore {
+    val fakeDataStore = object : AuthDataStore() {
         override suspend fun saveAuthToken(token: String) {}
         override suspend fun getAuthToken(): String? = null
         override suspend fun clearAuthToken() {}
     }
 
-    MaterialTheme {
+    // Use your custom REVD_UPTheme instead of default MaterialTheme
+    REVD_UPTheme {
         AdminDashboard(
-            dataStore = fake,
+            dataStore = fakeDataStore,
             onLogout = {}
         )
     }
