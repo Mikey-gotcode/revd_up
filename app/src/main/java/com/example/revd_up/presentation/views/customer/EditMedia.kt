@@ -13,13 +13,25 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil.compose.rememberAsyncImagePainter
+import kotlin.math.roundToInt
+
+// Data class to hold all image adjustment state
+data class ImageAdjustments(
+    val filterIndex: Int = 0, // 0 to 4 (Original, Vivid, Muted, Noir, Sepia)
+    val brightness: Float = 0f // -1.0 (Dark) to 1.0 (Bright)
+)
 
 /**
  * Step 2: User applies filters or edits the image/video.
@@ -31,8 +43,19 @@ fun FilterEditScreen(
     onNext: (filterIndex: Int) -> Unit,
     onBack: () -> Unit
 ) {
-    var selectedFilterIndex by remember { mutableStateOf(0) }
+    // Consolidated state for all adjustments
+    var adjustments by remember { mutableStateOf(ImageAdjustments()) }
+
+    // UI State for Tabs
+    val tabs = remember { listOf("FILTERS", "ADJUST") }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+
     val filters = remember { listOf("Original", "Vivid", "Muted", "Noir", "Sepia") }
+
+    // Calculate the combined color matrix based on current adjustments
+    val combinedColorMatrix = remember(adjustments) {
+        applyFilterAndEdits(adjustments)
+    }
 
     Scaffold(
         topBar = {
@@ -44,7 +67,7 @@ fun FilterEditScreen(
                     }
                 },
                 actions = {
-                    TextButton(onClick = { onNext(selectedFilterIndex) }) {
+                    TextButton(onClick = { onNext(adjustments.filterIndex) }) {
                         Text("Next", color = MaterialTheme.colorScheme.primary)
                     }
                 }
@@ -61,77 +84,192 @@ fun FilterEditScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
-                    .background(Color.Gray),
+                    .background(Color.DarkGray),
                 contentAlignment = Alignment.Center
             ) {
-                // In a real app, 'mediaUri' would be loaded and modified based on 'selectedFilterIndex'
-                if (mediaUri.toString().contains("mock")) {
-                    Text("Filtered Preview of $selectedFilterIndex", color = Color.White)
-                } else {
-                    // Use Coil for a real image placeholder (if URI was valid)
-                    Image(
-                        painter = rememberAsyncImagePainter(model = mediaUri),
-                        contentDescription = "Filtered Media Preview",
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize()
-                    )
-                }
+                // Apply the combined ColorMatrix to the Image
+                Image(
+                    painter = rememberAsyncImagePainter(model = mediaUri),
+                    contentDescription = "Filtered Media Preview",
+                    contentScale = ContentScale.Crop,
+                    colorFilter = ColorFilter.colorMatrix(combinedColorMatrix),
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
-            // --- Filter Selector ---
-            Text(
-                "Filters",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(16.dp)
-            )
-
-            LazyRow(
-                contentPadding = PaddingValues(horizontal = 16.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // --- Tab Selector (Filters / Adjust) ---
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                modifier = Modifier.fillMaxWidth()
             ) {
-                itemsIndexed(filters) { index, filterName ->
-                    FilterItem(
-                        name = filterName,
-                        isSelected = index == selectedFilterIndex,
-                        onClick = { selectedFilterIndex = index }
+                tabs.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTabIndex == index,
+                        onClick = { selectedTabIndex = index },
+                        text = { Text(title, fontWeight = FontWeight.SemiBold) }
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // --- Edit Tab Placeholder ---
-            Divider()
+            // --- Content Based on Tab Selection ---
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
+                    .weight(1f)
             ) {
-                Text("Edit Tools (Brightness, Crop, etc. would go here)", color = Color.Gray)
+                when (selectedTabIndex) {
+                    0 -> FilterContent(
+                        filters = filters,
+                        adjustments = adjustments,
+                        onFilterSelected = { index ->
+                            adjustments = adjustments.copy(filterIndex = index)
+                        }
+                    )
+                    1 -> EditContent(
+                        adjustments = adjustments,
+                        onBrightnessChange = { value ->
+                            adjustments = adjustments.copy(brightness = value)
+                        }
+                    )
+                }
             }
         }
     }
 }
 
+// --- Filter Tab Content ---
+
 @Composable
-fun FilterItem(name: String, isSelected: Boolean, onClick: () -> Unit) {
+fun FilterContent(
+    filters: List<String>,
+    adjustments: ImageAdjustments,
+    onFilterSelected: (Int) -> Unit
+) {
+    LazyRow(
+        contentPadding = PaddingValues(16.dp),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        itemsIndexed(filters) { index, filterName ->
+            val isSelected = index == adjustments.filterIndex
+            FilterItem(
+                name = filterName,
+                // We use a mock image URI here to display the filter effect on the thumbnail
+                mockUri = Uri.parse("https://placehold.co/100x100/4CAF50/FFFFFF?text=${filterName.take(1)}"),
+                isSelected = isSelected,
+                colorMatrix = applyFilterAndEdits(ImageAdjustments(filterIndex = index)),
+                onClick = { onFilterSelected(index) }
+            )
+        }
+    }
+}
+
+@Composable
+fun FilterItem(
+    name: String,
+    mockUri: Uri,
+    isSelected: Boolean,
+    colorMatrix: ColorMatrix,
+    onClick: () -> Unit
+) {
     val borderColor = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.clickable(onClick = onClick)
     ) {
+        // Thumbnail with the applied filter effect
         Box(
             modifier = Modifier
                 .size(72.dp)
                 .border(2.dp, borderColor, shape = RoundedCornerShape(8.dp))
-                .background(Color.LightGray.copy(alpha = 0.5f)),
-            contentAlignment = Alignment.Center
+                .clip(RoundedCornerShape(8.dp))
         ) {
-            Text(name.take(1), color = Color.Black)
+            Image(
+                painter = rememberAsyncImagePainter(model = mockUri),
+                contentDescription = name,
+                contentScale = ContentScale.Crop,
+                colorFilter = ColorFilter.colorMatrix(colorMatrix),
+                modifier = Modifier.fillMaxSize()
+            )
         }
         Spacer(modifier = Modifier.height(4.dp))
         Text(name, style = MaterialTheme.typography.bodySmall)
     }
+}
+
+// --- Edit Tab Content ---
+
+@Composable
+fun EditContent(
+    adjustments: ImageAdjustments,
+    onBrightnessChange: (Float) -> Unit
+) {
+    Column(modifier = Modifier.padding(16.dp)) {
+        // Brightness Slider
+        Text(
+            "Brightness: ${(adjustments.brightness * 100).roundToInt()}%",
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Slider(
+            value = adjustments.brightness,
+            onValueChange = onBrightnessChange,
+            valueRange = -1f..1f, // Range from dark (-1) to bright (1)
+            steps = 98 // Provides fine control
+        )
+        Text(
+            "Controls like Contrast, Saturation, and Crop would be added here.",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray
+        )
+    }
+}
+
+
+/**
+ * Core image processing logic. Creates a ColorMatrix combining the selected filter and manual edits.
+ * @param adjustments The current state of image modifications.
+ * @return A ColorMatrix ready to be applied as a ColorFilter.
+ */
+fun applyFilterAndEdits(adjustments: ImageAdjustments): ColorMatrix {
+    val matrix = ColorMatrix()
+
+    // 1. Apply Filter Preset
+    when (adjustments.filterIndex) {
+        1 -> matrix.setToSaturation(1.5f) // Vivid (High Saturation)
+        2 -> matrix.setToSaturation(0.2f) // Muted (Low Saturation)
+        3 -> matrix.setToSaturation(0f)   // Noir (Grayscale/B&W)
+        4 -> { // Sepia
+            val sepiaMatrix = ColorMatrix(
+                floatArrayOf(
+                    0.393f, 0.769f, 0.189f, 0f, 0f,
+                    0.349f, 0.686f, 0.168f, 0f, 0f,
+                    0.272f, 0.534f, 0.131f, 0f, 0f,
+                    0f,     0f,     0f,     1f, 0f
+                )
+            )
+            matrix.set(sepiaMatrix)
+        }
+        // Case 0 (Original) is the default, where the matrix remains an identity matrix.
+    }
+
+    // 2. Apply Manual Edits (Brightness)
+    // This is applied on top of the selected filter.
+    val brightnessOffset = adjustments.brightness // -1f to 1f, used as an offset
+
+    // **THE FIX IS HERE:** Create the brightness matrix and multiply it with the main matrix.
+    // Use the *= operator which is the Compose equivalent of postConcat.
+    val brightnessMatrix = ColorMatrix(
+        floatArrayOf(
+            1f, 0f, 0f, 0f, brightnessOffset,
+            0f, 1f, 0f, 0f, brightnessOffset,
+            0f, 0f, 1f, 0f, brightnessOffset,
+            0f, 0f, 0f, 1f, 0f
+        )
+    )
+    matrix *= brightnessMatrix
+
+    // 3. Return the final, combined matrix
+    return matrix
 }
