@@ -1,6 +1,7 @@
 package com.example.revd_up.presentation.navigation
 
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AddCircle
 import androidx.compose.material.icons.filled.AdminPanelSettings
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Construction
@@ -23,6 +24,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 sealed class BottomNavItem(val route: String, val icon: ImageVector, val title: String) {
     // Customer Routes
     object CustomerFeed : BottomNavItem("customer_feed", Icons.Default.Home, "Feed")
+    object AddPost : BottomNavItem("add_post", Icons.Default.AddCircle, "Add post") // No label
     object CustomerProfile : BottomNavItem("customer_profile", Icons.Default.Person, "Profile")
 
     // Verified Mechanic Routes
@@ -37,6 +39,7 @@ sealed class BottomNavItem(val route: String, val icon: ImageVector, val title: 
 // Lists for each role to be passed to the AppBottomNavBar in DashboardScreen
 val CustomerNavItems = listOf(
     BottomNavItem.CustomerFeed,
+    BottomNavItem.AddPost,
     BottomNavItem.CustomerProfile
 )
 

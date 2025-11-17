@@ -1,7 +1,10 @@
 package com.example.revd_up.presentation.views.common
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
@@ -21,9 +24,6 @@ import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.accompanist.pager.ExperimentalPagerApi
-import com.google.accompanist.pager.HorizontalPager
-import com.google.accompanist.pager.rememberPagerState
 import kotlinx.coroutines.launch
 
 // --------------------------------------------------------------------------------
@@ -40,7 +40,7 @@ data class OnboardingPage(
 // COMPOSABLES
 // --------------------------------------------------------------------------------
 
-@OptIn(ExperimentalPagerApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
     val pages = remember {
@@ -62,12 +62,12 @@ fun OnboardingScreen(onFinish: () -> Unit) {
             )
         )
     }
-    val pagerState = rememberPagerState()
+    // The new rememberPagerState takes a lambda for the page count.
+    val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
 
     Column(Modifier.fillMaxSize()) {
         HorizontalPager(
-            count = pages.size,
             state = pagerState,
             modifier = Modifier.weight(1f)
         ) { pageIndex ->

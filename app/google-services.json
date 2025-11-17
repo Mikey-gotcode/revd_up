@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "336825805868",
+    "project_id": "revdup-80a9e",
+    "storage_bucket": "revdup-80a9e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:336825805868:android:3003495633129b50d7f589",
+        "android_client_info": {
+          "package_name": "com.example.revd_up"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDQzm9nPzoOibfR4BbDf36z1ccQgflg-2E"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
