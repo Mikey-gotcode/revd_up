@@ -17,14 +17,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.revd_up.presentation.views.customer.AddPostRoute
 
 /**
  * Defines all possible bottom navigation destinations, separated by user role.
  */
-sealed class BottomNavItem(val route: String, val icon: ImageVector, val title: String) {
+sealed class BottomNavItem(val route: String, val icon: ImageVector, val title: String? = null) {
     // Customer Routes
     object CustomerFeed : BottomNavItem("customer_feed", Icons.Default.Home, "Feed")
-    object AddPost : BottomNavItem("add_post", Icons.Default.AddCircle, "Add post") // No label
+    // Made title optional, but the label { Text(item.title!!) } fails if null. Setting it explicitly to null.
+    object AddPost : BottomNavItem("add_post", Icons.Default.AddCircle, null)
     object CustomerProfile : BottomNavItem("customer_profile", Icons.Default.Person, "Profile")
 
     // Verified Mechanic Routes
@@ -39,7 +41,7 @@ sealed class BottomNavItem(val route: String, val icon: ImageVector, val title: 
 // Lists for each role to be passed to the AppBottomNavBar in DashboardScreen
 val CustomerNavItems = listOf(
     BottomNavItem.CustomerFeed,
-    BottomNavItem.AddPost,
+    BottomNavItem.AddPost, // Added to the center
     BottomNavItem.CustomerProfile
 )
 
@@ -71,19 +73,30 @@ fun AppBottomNavBar(
         val currentRoute = navBackStackEntry?.destination?.route
 
         items.forEach { item ->
+            val isSelected = currentRoute == item.route ||
+                    // Special handling for AddPost: select the icon if the user is in the post flow
+                    (item == BottomNavItem.AddPost && (currentRoute?.startsWith("post_") == true))
+
             NavigationBarItem(
-                icon = { Icon(item.icon, contentDescription = item.title) },
-                label = { Text(item.title) },
-                selected = currentRoute == item.route,
+                icon = { Icon(item.icon, contentDescription = item.title ?: "Add Post") },
+                // Use a label only if the title is not null
+                label = if (item.title != null) { { Text(item.title) } } else null,
+                selected = isSelected,
                 onClick = {
-                    navController.navigate(item.route) {
-                        // Keep a single instance of a composable in the back stack
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
+                    // Special case: If clicking AddPost, navigate directly to the first step
+                    if (item == BottomNavItem.AddPost) {
+                        navController.navigate(AddPostRoute.PICK_MEDIA)
+                    } else {
+                        // Standard navigation logic for Feed and Profile
+                        navController.navigate(item.route) {
+                            // Keep a single instance of a composable in the back stack
+                            popUpTo(navController.graph.startDestinationId) {
+                                saveState = true
+                            }
+                            // Avoid re-launching the same destination
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        // Avoid re-launching the same destination
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 }
             )
